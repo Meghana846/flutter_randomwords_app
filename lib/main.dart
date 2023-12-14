@@ -43,53 +43,129 @@ class MyAppState extends ChangeNotifier { //Myappstate class defines the app's s
   }
 } //to manage app state we are using changenotifier(this is just an example)
 
-class MyHomePage extends StatelessWidget {
+class MyHomePage extends StatefulWidget {
   @override
-  Widget build(BuildContext context) { //Every build method must return a widget or nested tree of widgets
-    var appState = context.watch<MyAppState>(); // tracks changes to the app's current state using the watch method
-    var generatedWord = appState.current;
+  State<MyHomePage> createState() => _MyHomePageState();
+}
 
+class _MyHomePageState extends State<MyHomePage> {
+  var selectedIndex = 0;
+  @override
+  Widget build(BuildContext context) {
+    Widget page;
+    switch (selectedIndex) {
+      case 0:
+        page = GeneratorPage();
+        break;
+      case 1:
+        page = FavoritesPage();
+        break;
+      default:
+        throw UnimplementedError('no widget for $selectedIndex');
+    }
+    return Scaffold(
+      body: Row(
+        children: [
+          SafeArea( //first widget
+            child: NavigationRail(
+              extended: false,
+              destinations: [
+                NavigationRailDestination(
+                  icon: Icon(Icons.home),
+                  label: Text('Home'),
+                ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.favorite),
+                  label: Text('Favorites'),
+                ),
+              ],
+              selectedIndex: selectedIndex,
+              onDestinationSelected: (value) {
+                setState(() {
+                  selectedIndex = value;
+                });
+              },
+            ),
+          ),
+          Expanded( //second widget, Expanded widgets are extremely useful in rows and columns
+            child: Container(
+              color: Theme.of(context).colorScheme.primaryContainer,
+              child: page,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+class GeneratorPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+    var generatedWord = appState.current;
     IconData icon;
-    if(appState.favorites.contains(generatedWord)){
+    if (appState.favorites.contains(generatedWord)) {
       icon = Icons.favorite;
-    }else{
+    } else {
       icon = Icons.favorite_border;
     }
-
-      return Scaffold(
-      body: Center(
-        child: Column( //Column is one of the most basic layout widgets t takes any number of children and puts them in a column from top to bottom
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            //Text('A randomly generated word:'),
-            BigCard(generatedWord: generatedWord),
-            SizedBox(height: 20),
-            Row(
-                mainAxisSize: MainAxisSize.min,
-                children:[
-                  ElevatedButton.icon(
-                    onPressed: (){
-                      appState.toggleFavorite();
-                  },
-                    icon: Icon(icon),
-                    label: Text('Like'),
-                ),
-                  ElevatedButton(
-                  onPressed: () {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          BigCard(generatedWord: generatedWord),
+          SizedBox(height: 10),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () {
+                  appState.toggleFavorite();
+                },
+                icon: Icon(icon),
+                label: Text('Like'),
+              ),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () {
                   appState.getNext();
-                  },
-                  child: Text('Next'),
-                  ),
-                    //SizedBox(width: 30,)
-               ],
+                },
+                child: Text('Next'),
               ),
             ],
           ),
-        )
+        ],
+      ),
+    );
+  }
+}
+class FavoritesPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
+    if (appState.favorites.isEmpty) {
+      return Center(
+        child: Text('No favorites yet.'),
       );
     }
-}
 
+    return ListView(
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(20),
+          child: Text('You have '
+              '${appState.favorites.length} favorites:'),
+        ),
+        for (var generatedWord in appState.favorites)
+          ListTile(
+            leading: Icon(Icons.favorite),
+            title: Text(generatedWord.asLowerCase),
+          ),
+      ],
+    );
+  }
+}
 class BigCard extends StatelessWidget {
   const BigCard({
     Key? key, // Add the key argument here
